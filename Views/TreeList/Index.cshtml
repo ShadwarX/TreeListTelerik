@@ -15,7 +15,6 @@ Html.Kendo().TreeList<TreeListModel>()
             .Width(150)
             .Title("Значение")
             .HtmlAttributes(new { @class = "value-column" })
-                        .Format("{0:N2}")
             .Editable("isValueEditable");
         columns.Add().Command(c =>
         {
