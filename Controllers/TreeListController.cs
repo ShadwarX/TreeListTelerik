@@ -74,16 +74,7 @@ namespace TelerikAspNetCoreApp1.Controllers
             var data = GetSessionData();
             var model = data.FirstOrDefault(e => e.Id == treeModel.Id);
             if (model != null)
-            {
                 model.Name = treeModel.Name;
-
-                if (double.TryParse(treeModel.Value, out var originalValue))
-                {
-                    model.OriginalValue = originalValue;
-                    SaveSessionData(data);
-                    UpdateValues(data);
-                }
-            }
             return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
         }
 
