@@ -62,6 +62,7 @@ namespace TelerikAspNetCoreApp1.Controllers
             if (item != null)
             {
                 data.Remove(item);
+                data.FirstOrDefault(x => x.Id == item.TreeListModelId)?.Children.Remove(item);
                 data.RemoveAll(e => e.TreeListModelId == treeModel.Id);
             }
             SaveSessionData(data);
@@ -74,8 +75,19 @@ namespace TelerikAspNetCoreApp1.Controllers
             var data = GetSessionData();
             var model = data.FirstOrDefault(e => e.Id == treeModel.Id);
             if (model != null)
+            {
                 model.Name = treeModel.Name;
-            return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
+                if (treeModel.Value != model.OldValue)
+                {
+                    if (double.TryParse(treeModel.Value, out var originalValue))
+                    {
+                        model.OriginalValue = originalValue;
+                        SaveSessionData(data);
+                        UpdateValues(data);
+                    }
+                }
+            }
+            return Json(new[] { model }.ToTreeDataSourceResult(request, ModelState));
         }
 
         private void UpdateValues(List<TreeListModel> data)
@@ -87,7 +99,10 @@ namespace TelerikAspNetCoreApp1.Controllers
                 if (sum == 0)
                     item.Value = "0";
                 else
-                    item.Value = (Math.Truncate(sum * 100) / 100).ToString();
+                {
+                    item.OldValue = item.Value;
+                    item.Value = sum.ToString();
+                }
             }
             SaveSessionData(data);
         }

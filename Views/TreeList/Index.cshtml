@@ -3,12 +3,6 @@
 @(
 Html.Kendo().TreeList<TreeListModel>()
     .Name("treeList")
-        .Events(ev =>
-        {
-            ev.DataBound("onDataBound")
-        .Edit("onEdit")
-        .CellClose("onCellClose");
-        })
     .Toolbar(toolbar =>
     {
         toolbar.Create().Text("Добавить родителя");
@@ -32,6 +26,13 @@ Html.Kendo().TreeList<TreeListModel>()
         });
     })
     .Editable(e => e.Mode(TreeListEditMode.InCell).Move(false))
+    .Events(ev =>
+    {
+        ev.DataBound("onDataBound");
+        ev.Edit("onEdit");
+        ev.Remove("onRemove");
+        ev.CellClose("onCellClose");
+    })
     .DataSource(dataSource => dataSource
         .Create(create => create.Action("Create", "TreeList").Type(HttpVerbs.Post))
         .Update(update => update.Action("Update", "TreeList").Type(HttpVerbs.Post))
