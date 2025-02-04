@@ -35,9 +35,13 @@ app.UseRouting();
 
 app.UseSession();
 app.UseAuthorization();
+app.MapControllerRoute(
+    name: "treeList",
+    pattern: "{controller=TreeList}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}",
+    defaults: new { controller = "Home" });
 
 app.Run();

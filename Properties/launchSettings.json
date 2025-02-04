@@ -1,12 +1,12 @@
 {
   "profiles": {
-    "TelerikAspNetCoreApp1": {
+    "TelerikAspNetCoreApp311": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:32157;http://localhost:32158"
+      "applicationUrl": "https://localhost:33323;http://localhost:33324"
     }
   }
 }

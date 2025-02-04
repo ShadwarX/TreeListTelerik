@@ -1,118 +1,47 @@
-﻿using Kendo.Mvc.Extensions;
-using Kendo.Mvc.UI;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace TelerikAspNetCoreApp1.Controllers
+namespace TelerikAspNetCoreApp311.Controllers
 {
     public class HomeController : Controller
     {
-        private const string SessionKey = "TreeListData";
 
-        private List<TreeListModel> GetSessionData()
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
-            var data = HttpContext.Session.GetString(SessionKey);
-
-            return data != null ? JsonConvert.DeserializeObject<List<TreeListModel>>(data) : new List<TreeListModel>();
+            if (!string.IsNullOrEmpty(context.HttpContext.Request.Query["culture"]))
+            {
+                CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo(context.HttpContext.Request.Query["culture"]);
+            }
+            base.OnActionExecuting(context);
         }
 
-        private void SaveSessionData(List<TreeListModel> data)
-        {
-            HttpContext.Session.SetString(SessionKey, JsonConvert.SerializeObject(data));
-        }
-
-        public ActionResult Index()
+        public IActionResult Index()
         {
             return View();
         }
 
-        public IActionResult GetAll([DataSourceRequest] DataSourceRequest request)
+        public IActionResult About()
         {
-            var data = GetSessionData();
-            return Json(data.ToTreeDataSourceResult(request, e => e.Id, e => e.TreeListModelId, e => e));
+            ViewData["Message"] = "Your application description page.";
+
+            return View();
         }
 
-        public JsonResult Create([DataSourceRequest] DataSourceRequest request, TreeListModel treeModel)
+        public IActionResult Contact()
         {
-            if (treeModel == null) return null;
+            ViewData["Message"] = "Your contact page.";
 
-            var data = GetSessionData();
-            treeModel.Id = data.Count > 0 ? data.Max(x => x.Id) + 1 : 1;
-            data.Add(treeModel);
-            if (treeModel.TreeListModelId > 0)
-                data.FirstOrDefault(x => x.Id == treeModel.TreeListModelId)?.Children.Add(treeModel);
-
-            if (!string.IsNullOrEmpty(treeModel.Value))
-                treeModel.Value = treeModel.Value.Replace('.', ',');
-            if (double.TryParse(treeModel.Value, out var originalValue))
-            {
-                treeModel.OriginalValue = originalValue;
-                SaveSessionData(data);
-                UpdateValues(data);
-            }
-
-            return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
+            return View();
         }
 
-        public JsonResult Destroy([DataSourceRequest] DataSourceRequest request, TreeListModel treeModel)
+        public IActionResult Error()
         {
-            var data = GetSessionData();
-            var item = data.FirstOrDefault(e => e.Id == treeModel.Id);
-            if (item != null)
-            {
-                data.Remove(item);
-                data.RemoveAll(e => e.TreeListModelId == treeModel.Id);
-            }
-            SaveSessionData(data);
-            UpdateValues(data);
-            return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
-        }
-
-        public JsonResult Update([DataSourceRequest] DataSourceRequest request, TreeListModel treeModel)
-        {
-            var data = GetSessionData();
-            var model = data.FirstOrDefault(e => e.Id == treeModel.Id);
-            if (model != null)
-            {
-                model.Name = treeModel.Name;
-
-                if (double.TryParse(treeModel.Value, out var originalValue))
-                {
-                    model.OriginalValue = originalValue;
-                    SaveSessionData(data);
-                    UpdateValues(data);
-                }
-            }
-            return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
-        }
-
-        private void UpdateValues(List<TreeListModel> data)
-        {
-            foreach (var item in data)
-            {
-                var sum = CalculateSum(data, item.Id);
-
-                if (sum == 0)
-                    item.Value = "0";
-                else
-                    item.Value = sum.ToString("0:00");
-            }
-            SaveSessionData(data);
-        }
-
-        private double CalculateSum(List<TreeListModel> data, int id)
-        {
-            var item = data.FirstOrDefault(e => e.Id == id);
-            if (item == null) return 0;
-
-            double total = 0.0d;
-            foreach (var other in data.Where(e => e.TreeListModelId == id))
-            {
-                total += other.OriginalValue;
-                total += CalculateSum(data, other.Id);
-            }
-
-            return total;
+            return View();
         }
     }
 }

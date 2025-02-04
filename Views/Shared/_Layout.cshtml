@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - TelerikAspNetCoreApp1</title>
+    <title>@ViewData["Title"] - TelerikAspNetCoreApp311</title>
 
     <environment names="Development">
         <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.css" />
@@ -17,25 +17,32 @@
     </environment>
     @*Core Content Start*@
 
-    <link href="https://kendo.cdn.telerik.com/themes/8.2.1/classic/classic-main-dark.css" rel="stylesheet" type="text/css" />
+    <link href="https://kendo.cdn.telerik.com/themes/8.2.1/default/default-ocean-blue.css" rel="stylesheet" type="text/css" />
 	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 	<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
 	<script src="https://cdn.kendostatic.com/2024.4.1112/js/kendo.all.min.js"></script>
 	<script src="https://cdn.kendostatic.com/2024.4.1112/js/kendo.aspnetmvc.min.js"></script>
 @*Core Content End*@
-        @{
-        var culture = System.Globalization.CultureInfo.CurrentCulture.ToString();
-        var path = Url.Content("~/lib/kendo-ui/js/messages/kendo.messages." + culture + ".min.js");
-    }
-
-    <script src="@path"></script>
 </head>
 <body class="k-content">
     <nav class="navbar navbar-inverse navbar-fixed-top p-3">
         <div class="container p-0 p-sm-3">
             <div class="navbar-header">
                 <kendo-button name="configure" tag="button" icon="menu" theme-color="ThemeColor.Primary" class="k-rpanel-toggle btn-toggle"></kendo-button>
-                <a asp-controller="Home" asp-action="Index" class="navbar-brand">TreeList</a>
+                <a asp-controller="TreeList" asp-action="Index" class="navbar-brand">TreeList</a>
+            </div>
+            <div id="responsive-panel" class="navbar-left">
+                <kendo-responsivepanel name="responsive-panel" auto-close="false" breakpoint="768" orientation="top">
+                    @(Html.Kendo().Menu()
+                        .Name("Menu")
+                        .Items(items =>
+                        {
+                            items.Add().Text("Home").Action("Index", "Home", new { area = "" });
+                            items.Add().Text("TreeList").Action("Index", "TreeList", new { area = "" });
+                            items.Add().Text("TreeList").Action("Index", "TreeList", new { area = "" });
+                        })
+                    )
+                </kendo-responsivepanel>
             </div>
         </div>
     </nav>

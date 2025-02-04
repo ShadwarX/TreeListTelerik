@@ -1,54 +1,40 @@
-﻿@using Kendo.Mvc.UI
-
-@(
-Html.Kendo().TreeList<TreeListModel>()
-    .Name("treeList")
-        .Events(ev =>
-        {
-            ev.DataBound("onDataBound")
-        .Edit("onEdit")
-        .CellClose("onCellClose");
-        })
-    .Toolbar(toolbar =>
-    {
-        toolbar.Create().Text("Добавить родителя");
-        toolbar.Cancel();
-    })
-    .Columns(columns =>
-    {
-        columns.Add().Field(m => m.Name).Width(300).Title("Имя").Editable("isNameEditable");
-        columns.Add()
-            .Field(m => m.Value)
-            .Width(150)
-            .Title("Значение")
-            .HtmlAttributes(new { @class = "value-column" })
-                        .Format("{0:N2}")
-            .Editable("isValueEditable");
-
-        columns.Add().Command(c =>
-        {
-            c.CreateChild().Text("Добавить");
-            c.Destroy();
-        });
-    })
-    .Editable(e => e.Mode(TreeListEditMode.InCell).Move(false))
-    .DataSource(dataSource => dataSource
-        .Create(create => create.Action("Create", "TreeList").Type(HttpVerbs.Post))
-        .Update(update => update.Action("Update", "TreeList").Type(HttpVerbs.Post))
-        .Destroy(delete => delete.Action("Destroy", "TreeList").Type(HttpVerbs.Post))
-        .Read(read => read.Action("GetAll", "TreeList"))
-        .Model(m =>
-        {
-            m.Id(f => f.Id);
-            m.ParentId(f => f.TreeListModelId);
-            m.Field(f => f.Name);
-            m.Field(f => f.Value);
-            m.Field(f => f.OriginalValue);
-            m.Expanded(true);
-        })
-    )
-)
-
-@section Scripts {
-    <script src="~/js/site.js"></script>
+﻿@{
+    ViewData["Title"] = "Home Page";
 }
+
+
+<div>
+    @(Html.Kendo().PanelBar()
+                                            .Name("IntroPanelBar")
+                                            .Items(items =>
+                                            {
+                                                items.Add()
+                                                    .Text("ASP.NET Core")
+                                                    .Selected(true)
+                                                    .Expanded(true)
+                                                    .Content(@<text>
+                                                        <p style="padding:1em 2em">
+                                                            Learn how to build ASP.NET apps that can run anywhere.
+                                                            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkID=525028&clcid=0x409">Learn More</a>
+                                                        </p>
+                                                    </text>);
+                                                        items.Add()
+            .Text("Visual Studio")
+            .Content(@<text>
+                <p style="padding:1em 2em">
+                    There are powerful new features in Visual Studio for building modern web apps.
+                    <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkID=525030&clcid=0x409">Learn More</a>
+                </p>
+            </text>);
+                                            items.Add()
+.Text("Package Management")
+.Content(@<text>
+    <p style="padding:1em 2em">
+        Bring in libraries from NuGet, Bower, and npm, and automate tasks using Grunt or Gulp.
+        <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkID=525029&clcid=0x409">Learn More</a>
+    </p>
+</text>);
+                                        })
+    )
+</div>
+

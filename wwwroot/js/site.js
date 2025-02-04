@@ -19,7 +19,6 @@ function onCellClose(e) {
 }
 
 function onDataBound(e) {
-    var model = e.model;
     var items = e.sender.items();
     for (var i = 0; i < items.length; i++) {
         var row = $(items[i]);

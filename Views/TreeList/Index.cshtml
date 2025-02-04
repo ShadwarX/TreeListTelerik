@@ -1,0 +1,54 @@
+﻿@using Kendo.Mvc.UI
+
+@(
+Html.Kendo().TreeList<TreeListModel>()
+    .Name("treeList")
+        .Events(ev =>
+        {
+            ev.DataBound("onDataBound")
+        .Edit("onEdit")
+        .CellClose("onCellClose");
+        })
+    .Toolbar(toolbar =>
+    {
+        toolbar.Create().Text("Добавить родителя");
+        toolbar.Cancel();
+    })
+    .Columns(columns =>
+    {
+        columns.Add().Field(m => m.Name).Width(300).Title("Имя").Editable("isNameEditable");
+        columns.Add()
+            .Field(m => m.Value)
+            .Width(150)
+            .Title("Значение")
+            .HtmlAttributes(new { @class = "value-column" })
+                        .Format("{0:N2}")
+            .Editable("isValueEditable");
+
+        columns.Add().Command(c =>
+        {
+            c.CreateChild().Text("Добавить");
+            c.Destroy();
+        });
+    })
+    .Editable(e => e.Mode(TreeListEditMode.InCell).Move(false))
+    .DataSource(dataSource => dataSource
+        .Create(create => create.Action("Create", "TreeList").Type(HttpVerbs.Post))
+        .Update(update => update.Action("Update", "TreeList").Type(HttpVerbs.Post))
+        .Destroy(delete => delete.Action("Destroy", "TreeList").Type(HttpVerbs.Post))
+        .Read(read => read.Action("GetAll", "TreeList"))
+        .Model(m =>
+        {
+            m.Id(f => f.Id);
+            m.ParentId(f => f.TreeListModelId);
+            m.Field(f => f.Name);
+            m.Field(f => f.Value);
+            m.Field(f => f.OriginalValue);
+            m.Expanded(true);
+        })
+    )
+)
+
+@section Scripts {
+    <script src="~/js/site.js"></script>
+}
