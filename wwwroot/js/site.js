@@ -39,7 +39,7 @@ function updateParent(parentItem) {
     var treeList = $("#treeList").data("kendoTreeList");
 
     if (parentItem) {
-        var sum = calculateChildrenSum(parentItem);
+        var sum = getChildrenSum(parentItem);
         parentItem.set("Value", sum.toString());
         treeList.dataSource.sync();
     }
@@ -51,7 +51,7 @@ function getChildrenSum(parentItem) {
     if (parentItem.Children) {
         parentItem.Children.forEach(function (child) {
             sum += child.OriginalValue;
-            sum += calculateChildrenSum(child);
+            sum += getChildrenSum(child);
         });
     }
 
