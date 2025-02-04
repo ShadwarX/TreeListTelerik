@@ -6,7 +6,6 @@ Html.Kendo().TreeList<TreeListModel>()
     .Toolbar(toolbar =>
     {
         toolbar.Create().Text("Добавить родителя");
-        toolbar.Cancel();
     })
     .Columns(columns =>
     {
@@ -18,12 +17,12 @@ Html.Kendo().TreeList<TreeListModel>()
             .HtmlAttributes(new { @class = "value-column" })
                         .Format("{0:N2}")
             .Editable("isValueEditable");
-
         columns.Add().Command(c =>
         {
             c.CreateChild().Text("Добавить");
             c.Destroy();
         });
+
     })
     .Editable(e => e.Mode(TreeListEditMode.InCell).Move(false))
     .Events(ev =>

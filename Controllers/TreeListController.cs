@@ -2,7 +2,6 @@
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Telerik.SvgIcons;
 
 namespace TelerikAspNetCoreApp1.Controllers
 {
@@ -10,14 +9,14 @@ namespace TelerikAspNetCoreApp1.Controllers
     {
         private const string SessionKey = "TreeListData";
 
-        private List<TreeListModel> GetSessionData()
+        private Dictionary<int, TreeListModel> GetSessionData()
         {
             var data = HttpContext.Session.GetString(SessionKey);
 
-            return data != null ? JsonConvert.DeserializeObject<List<TreeListModel>>(data) : new List<TreeListModel>();
+            return data != null ? JsonConvert.DeserializeObject<Dictionary<int, TreeListModel>>(data) : new Dictionary<int, TreeListModel>();
         }
 
-        private void SaveSessionData(List<TreeListModel> data)
+        private void SaveSessionData(Dictionary<int, TreeListModel> data)
         {
             HttpContext.Session.SetString(SessionKey, JsonConvert.SerializeObject(data));
         }
@@ -30,7 +29,7 @@ namespace TelerikAspNetCoreApp1.Controllers
         public IActionResult GetAll([DataSourceRequest] DataSourceRequest request)
         {
             var data = GetSessionData();
-            return Json(data.ToTreeDataSourceResult(request, e => e.Id, e => e.TreeListModelId, e => e));
+            return Json(data.Values.ToTreeDataSourceResult(request, e => e.Id, e => e.TreeListModelId, e => e));
         }
 
         public JsonResult Create([DataSourceRequest] DataSourceRequest request, TreeListModel treeModel)
@@ -38,19 +37,23 @@ namespace TelerikAspNetCoreApp1.Controllers
             if (treeModel == null) return null;
 
             var data = GetSessionData();
-            treeModel.Id = data.Count > 0 ? data.Max(x => x.Id) + 1 : 1;
-            data.Add(treeModel);
-            if (treeModel.TreeListModelId > 0)
-                data.FirstOrDefault(x => x.Id == treeModel.TreeListModelId)?.Children.Add(treeModel);
+            treeModel.Id = data.Count > 0 ? data.Keys.Max(x => x) + 1 : 1;
+            data[treeModel.Id] = treeModel;
 
-            if (!string.IsNullOrEmpty(treeModel.Value))
-                treeModel.Value = treeModel.Value.Replace('.', ',');
-            if (double.TryParse(treeModel.Value, out var originalValue))
+            if (double.TryParse(treeModel.Value.Replace('.', ','), out var valueTree) && double.TryParse(treeModel.OriginalValue.Replace('.', ','), out valueTree))
             {
-                treeModel.OriginalValue = originalValue;
-                SaveSessionData(data);
-                UpdateValues(data);
+                if (treeModel.TreeListModelId > 0)
+                {
+                    if (treeModel.TreeListModelId != null && data.TryGetValue((int)treeModel.TreeListModelId, out var parent))
+                    {
+                        parent.Visited = false;
+                        parent.Children.Add(treeModel.Id);
+                        UpdateParents(data, parent.Id);
+                    }
+                }
             }
+
+            SaveSessionData(data);
 
             return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
         }
@@ -58,65 +61,99 @@ namespace TelerikAspNetCoreApp1.Controllers
         public JsonResult Destroy([DataSourceRequest] DataSourceRequest request, TreeListModel treeModel)
         {
             var data = GetSessionData();
-            var item = data.FirstOrDefault(e => e.Id == treeModel.Id);
-            if (item != null)
-            {
-                data.Remove(item);
-                data.FirstOrDefault(x => x.Id == item.TreeListModelId)?.Children.Remove(item);
-                data.RemoveAll(e => e.TreeListModelId == treeModel.Id);
-            }
-            SaveSessionData(data);
-            UpdateValues(data);
+            if (TryRemoveTreeNode(data, treeModel.Id))
+                SaveSessionData(data);
             return Json(new[] { treeModel }.ToTreeDataSourceResult(request, ModelState));
+        }
+
+        private bool TryRemoveTreeNode(Dictionary<int, TreeListModel> data, int id)
+        {
+            if (data.TryGetValue(id, out var treeItem))
+            {
+                data.Remove(treeItem.Id);
+                if (treeItem.TreeListModelId != null && treeItem.TreeListModelId > 0 && data.TryGetValue((int)treeItem.TreeListModelId, out var parent))
+                    parent.Children?.Remove(treeItem.Id);
+                if (treeItem.TreeListModelId != null)
+                    UpdateParents(data, (int)treeItem.TreeListModelId);
+
+                if (treeItem.Children.Count > 0)
+                {
+                    foreach (var child in treeItem.Children)
+                        TryRemoveTreeNode(data, child);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         public JsonResult Update([DataSourceRequest] DataSourceRequest request, TreeListModel treeModel)
         {
             var data = GetSessionData();
-            var model = data.FirstOrDefault(e => e.Id == treeModel.Id);
-            if (model != null)
+            if (data.TryGetValue(treeModel.Id, out var treeItem))
             {
-                model.Name = treeModel.Name;
-                if (treeModel.Value != model.OldValue)
+                treeItem.Name = treeModel.Name;
+
+                if ((treeModel.Value != treeItem.Value || treeItem.OriginalValue != treeModel.OriginalValue)
+                    && double.TryParse(treeModel.Value.Replace('.', ','), out var originalValue) && double.TryParse(treeModel.OriginalValue.Replace('.', ','), out originalValue))
                 {
-                    if (double.TryParse(treeModel.Value, out var originalValue))
+                    treeItem.Visited = false;
+                    treeItem.Value = treeModel.Value;
+                    treeItem.OriginalValue = treeModel.OriginalValue;
+
+                    UpdateParents(data, treeItem.Id);
+                    SaveSessionData(data);
+                }
+            }
+            return Json(new[] { treeItem }.ToTreeDataSourceResult(request, ModelState));
+        }
+
+        private void UpdateParents(Dictionary<int, TreeListModel> data, int parentId)
+        {
+            if (data.TryGetValue(parentId, out var parent))
+            {
+                if (parent.Children.Count == 0)
+                    parent.Value = parent.OriginalValue.Replace(',', '.');
+                else
+                    parent.Value = CalculateSum(data, parent.Children, parent.Id).ToString().Replace(',', '.');
+                parent.Visited = true;
+
+                if (parent.TreeListModelId != null)
+                    UpdateParents(data, (int)parent.TreeListModelId);
+            }
+        }
+
+        private double CalculateSum(Dictionary<int, TreeListModel> data, List<int> itemsId, int id)
+        {
+            double total = 0.0d;
+
+            foreach (var itemId in itemsId)
+            {
+                if (data.TryGetValue(itemId, out var treeItem))
+                {
+                    if (treeItem.Visited)
                     {
-                        model.OriginalValue = originalValue;
-                        SaveSessionData(data);
-                        UpdateValues(data);
+                        total += double.Parse(treeItem.Value.Replace('.', ','));
+                        if (treeItem.Children.Count > 0)
+                            total += double.Parse(treeItem.OriginalValue.Replace('.', ','));
+                    }
+                    else
+                    {
+                        double current = 0.0d;
+                        if (treeItem.Children.Count > 0)
+                        {
+                            current = CalculateSum(data, treeItem.Children, treeItem.Id);
+                            treeItem.Value = current.ToString().Replace(',', '.');
+                        }
+                        else
+                        {
+                            treeItem.Value = treeItem.OriginalValue.Replace(',', '.');
+                        }
+                        treeItem.Visited = true;
+                        total += current + double.Parse(treeItem.OriginalValue.Replace('.', ','));
                     }
                 }
-            }
-            return Json(new[] { model }.ToTreeDataSourceResult(request, ModelState));
-        }
-
-        private void UpdateValues(List<TreeListModel> data)
-        {
-            foreach (var item in data)
-            {
-                var sum = CalculateSum(data, item.Id);
-
-                if (sum == 0)
-                    item.Value = "0";
-                else
-                {
-                    item.OldValue = item.Value;
-                    item.Value = sum.ToString();
-                }
-            }
-            SaveSessionData(data);
-        }
-
-        private double CalculateSum(List<TreeListModel> data, int id)
-        {
-            var item = data.FirstOrDefault(e => e.Id == id);
-            if (item == null) return 0;
-
-            double total = 0.0d;
-            foreach (var other in data.Where(e => e.TreeListModelId == id))
-            {
-                total += other.OriginalValue;
-                total += CalculateSum(data, other.Id);
             }
 
             return total;
